@@ -1,4 +1,5 @@
 require 'net/http'
+require 'net/http/persistent'
 require 'json'
 
 module Nexmo
@@ -57,6 +58,15 @@ module Nexmo
       response = @http.request(message)
 
       parse(response, &block)
+    end
+
+    def persistent_request(to_array, path, params)
+      @http = Net::HTTP::Persistent.new host
+      to_array.each do |to|
+        params[:params][:to] = to
+        request(path, params)
+      end
+      @http.shutdown
     end
 
     def encode_body(params, message)
