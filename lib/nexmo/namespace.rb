@@ -9,6 +9,7 @@ module Nexmo
 
       @http = Net::HTTP.new(host, Net::HTTP.https_default_port)
       @http.use_ssl = true
+      @failed_deliveries = []
     end
 
     private
@@ -61,12 +62,25 @@ module Nexmo
     end
 
     def persistent_request(to_array, path, params)
-      @http = Net::HTTP::Persistent.new host
-      to_array.each do |to|
-        params[:params][:to] = to
-        request(path, params)
+      Net::HTTP.start(host) do |http|
+        @http = http
+        to_array.each do |to|
+          params[:params][:to] = to
+          # retry 5 times
+          5.times do
+            begin
+              result = request(path, params)
+              raise Nexmo::Error if result.messages.any?{ |x| x.status == '1' }
+              @failed_deliveries << result.messages if result.messages.any?{|x| x.status != '0'}
+              break
+            rescue Nexmo::Error => error
+              logger.error('Sms Limit reached')
+              sleep 1
+            end
+          end
+        end
       end
-      @http.shutdown
+      @failed_deliveries
     end
 
     def encode_body(params, message)

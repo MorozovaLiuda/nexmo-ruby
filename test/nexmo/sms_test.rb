@@ -1,5 +1,4 @@
 require_relative './test'
-require 'pry'
 
 class NexmoSMSTest < Nexmo::Test
   def sms
