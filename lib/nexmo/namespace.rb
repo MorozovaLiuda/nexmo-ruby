@@ -66,16 +66,23 @@ module Nexmo
         @http = http
         to_array.each do |to|
           params[:params][:to] = to
-          # retry 5 times
-          5.times do
-            begin
-              result = request(path, params)
-              raise Nexmo::Error if result.messages.any?{ |x| x.status == '1' }
-              @failed_deliveries << result.messages if result.messages.any?{|x| x.status != '0'}
-              break
-            rescue Nexmo::Error => error
+          attempts = 0
+          begin
+            messages = request(path, params).messages
+            case messages.first&.status
+            when '0'
+              logger.success("Message successfully sent to #{to}.")
+            when '1'
               logger.error('Sms Limit reached')
+              raise Nexmo::Error
+            else
+              @failed_deliveries << result.messages
+            end
+          rescue Nexmo::Error => error
+            if attempts <= 5
+              attempts += 1
               sleep 1
+              retry
             end
           end
         end
