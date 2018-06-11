@@ -1,4 +1,5 @@
 require 'net/http'
+require 'net/http/persistent'
 require 'json'
 
 module Nexmo
@@ -8,6 +9,7 @@ module Nexmo
 
       @http = Net::HTTP.new(host, Net::HTTP.https_default_port)
       @http.use_ssl = true
+      @failed_deliveries = []
     end
 
     private
@@ -57,6 +59,35 @@ module Nexmo
       response = @http.request(message)
 
       parse(response, &block)
+    end
+
+    def persistent_request(to_array, path, params)
+      Net::HTTP.start(host) do |http|
+        @http = http
+        to_array.each do |to|
+          params[:params][:to] = to
+          attempts = 0
+          begin
+            messages = request(path, params).messages
+            case messages.first&.status
+            when '0'
+              logger.success("Message successfully sent to #{to}.")
+            when '1'
+              logger.error('Sms Limit reached')
+              raise Nexmo::Error
+            else
+              @failed_deliveries << result.messages
+            end
+          rescue Nexmo::Error => error
+            if attempts <= 5
+              attempts += 1
+              sleep 1
+              retry
+            end
+          end
+        end
+      end
+      @failed_deliveries
     end
 
     def encode_body(params, message)
