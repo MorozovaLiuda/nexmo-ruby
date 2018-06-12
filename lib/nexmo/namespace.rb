@@ -1,9 +1,10 @@
 require 'net/http'
-require 'net/http/persistent'
 require 'json'
+require 'pry'
 
 module Nexmo
   class Namespace
+
     def initialize(client)
       @client = client
 
@@ -61,29 +62,27 @@ module Nexmo
       parse(response, &block)
     end
 
-    def persistent_request(to_array, path, params)
-      Net::HTTP.start(host) do |http|
+    def persistent_request(to_array, path, params: nil, type: Get, &block)
+      Net::HTTP.start(host, Net::HTTP.https_default_port, use_ssl: true) do |http|
         @http = http
         to_array.each do |to|
-          params[:params][:to] = to
+          params[:to] = to
           attempts = 0
           begin
-            messages = request(path, params).messages
+            messages = request(path, params: params, type: type).messages
             case messages.first&.status
             when '0'
-              logger.success("Message successfully sent to #{to}.")
+              logger.info("Message successfully sent to #{to}.")
             when '1'
               logger.error('Sms Limit reached')
-              raise Nexmo::Error
+              attempts > 5 ? @failed_deliveries << messages : raise(Nexmo::Error)
             else
-              @failed_deliveries << result.messages
+              @failed_deliveries << messages
             end
           rescue Nexmo::Error => error
-            if attempts <= 5
-              attempts += 1
-              sleep 1
-              retry
-            end
+            attempts += 1
+            sleep 1
+            retry
           end
         end
       end
