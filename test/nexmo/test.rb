@@ -61,5 +61,12 @@ module Nexmo
     def msisdn
       '447700900000'
     end
+
+    def stub_sms_request(recipient: '447700900000', status: '0', uri: 'https://rest.nexmo.com/sms/json')
+      params = { from: 'Ruby', text: 'Hello from Ruby!', to: recipient }
+      stub_request(:post, uri)
+        .with(headers: headers, body: params.merge(api_key_and_secret))
+        .to_return({ body: { messages: [{ status: status }] }.to_json, headers: response_headers})
+    end
   end
 end
