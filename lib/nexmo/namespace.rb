@@ -1,10 +1,8 @@
 require 'net/http'
 require 'json'
-require 'pry'
 
 module Nexmo
   class Namespace
-
     def initialize(client)
       @client = client
 
