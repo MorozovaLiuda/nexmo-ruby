@@ -8,8 +8,8 @@ module Nexmo
       request('/sms/json', params: hyphenate(params), type: Post)
     end
 
-    def bulk_send(to_array, params)
-      persistent_request(to_array, '/sms/json', params: hyphenate(params), type: Post)
+    def bulk_send(to_array, params, &block)
+      persistent_request(to_array, '/sms/json', params: hyphenate(params), type: Post, &block)
     end
 
     private
