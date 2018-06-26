@@ -64,7 +64,8 @@ module Nexmo
       Net::HTTP.start(host, Net::HTTP.https_default_port, use_ssl: true) do |http|
         @http = http
         to_array.each do |to|
-          params[:to] = to
+          params['to'] = to
+          params['text'] = yield(to, params['text']) if block_given?
           attempts = 0
           begin
             messages = request(path, params: params, type: type).messages
