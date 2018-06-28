@@ -8,7 +8,7 @@ module Nexmo
 
       @http = Net::HTTP.new(host, Net::HTTP.https_default_port)
       @http.use_ssl = true
-      @failed_deliveries = []
+      @bulk_response = []
     end
 
     private
@@ -72,11 +72,12 @@ module Nexmo
             case messages.first&.status
             when '0'
               logger.info("Message successfully sent to #{to}.")
+              @bulk_response << messages
             when '1'
               logger.error('Sms Limit reached')
-              attempts > 5 ? @failed_deliveries << messages : raise(Nexmo::Error)
+              attempts > 5 ? @bulk_response << messages : raise(Nexmo::Error)
             else
-              @failed_deliveries << messages
+              @bulk_response << messages
             end
           rescue Nexmo::Error => error
             attempts += 1
@@ -85,7 +86,7 @@ module Nexmo
           end
         end
       end
-      @failed_deliveries
+      @bulk_response
     end
 
     def encode_body(params, message)
