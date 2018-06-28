@@ -72,13 +72,11 @@ module Nexmo
             case messages.first&.status
             when '0'
               logger.info("Message successfully sent to #{to}.")
-              @bulk_response << messages
             when '1'
               logger.error('Sms Limit reached')
-              attempts > 5 ? @bulk_response << messages : raise(Nexmo::Error)
-            else
-              @bulk_response << messages
+              raise(Nexmo::Error) if attempts <= 5
             end
+            @bulk_response << messages
           rescue Nexmo::Error => error
             attempts += 1
             sleep 1
