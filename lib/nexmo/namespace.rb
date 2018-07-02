@@ -68,15 +68,15 @@ module Nexmo
           params['text'] = yield(to, params['text']) if block_given?
           attempts = 0
           begin
-            messages = request(path, params: params, type: type).messages
-            case messages.first&.status
+            response = request(path, params: params, type: type)
+            case response.messages.first&.status
             when '0'
               logger.info("Message successfully sent to #{to}.")
             when '1'
               logger.error('Sms Limit reached')
               raise(Nexmo::Error) if attempts <= 5
             end
-            @bulk_response << messages
+            @bulk_response << response
           rescue Nexmo::Error => error
             attempts += 1
             sleep 1
