@@ -23,7 +23,7 @@ class NexmoSMSTest < Nexmo::Test
     recipients.each{ |recipient| stub_sms_request(recipient: recipient) }
 
     params = { from: 'Ruby', text: 'Hello from Ruby!' }
-    assert_equal [[Nexmo::Entity.new(status: '0')]] * 2, sms.bulk_send(recipients, params), sms.bulk_send(recipients, params) # No failed Deliveries
+    assert_equal [ Nexmo::Entity.new({ messages: [Nexmo::Entity.new(status: '0')] }) ] * 2, sms.bulk_send(recipients, params), sms.bulk_send(recipients, params) # No failed Deliveries
   end
 
   # Slow (12 sec) Test! Run at your own risk
@@ -41,7 +41,7 @@ class NexmoSMSTest < Nexmo::Test
     recipients.each{ |recipient| stub_sms_request(recipient: recipient, status: '2') }
 
     params = { from: 'Ruby', text: 'Hello from Ruby!' }
-    assert_equal [[Nexmo::Entity.new(status: '2')]] * 2, sms.bulk_send(recipients, params)
+    assert_equal [ Nexmo::Entity.new({ messages: [Nexmo::Entity.new(status: '2')] }) ] * 2, sms.bulk_send(recipients, params), sms.bulk_send(recipients, params) # No failed Deliveries
   end
 
   def test_mapping_underscored_keys_to_hyphenated_string_keys
